@@ -150,7 +150,8 @@ class LambdaHandler(object):
             # This is not the best way to do this but it'll do.
             if '.' in whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
-
+                if app_function == lambda_handler:
+                    return "I'm warm"
                 # Execute the function!
                 return self.run_function(app_function, event, context)
             # Else, let this execute as it were.

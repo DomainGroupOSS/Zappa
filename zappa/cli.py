@@ -428,7 +428,8 @@ class ZappaCLI(object):
             print("Keep warm event will be scheduled.")
         if events:
             try:
-                function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+                function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name,
+                                                                          Qualifier='HEAD')
             except botocore.exceptions.ClientError as e: # pragma: no cover
                 print("Function does not exist, please deploy first. Ex: zappa deploy {}.".format(self.api_stage))
                 return
@@ -461,7 +462,7 @@ class ZappaCLI(object):
 
         function_arn = None
         try:
-            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name, Qualifier='HEAD')
             function_arn = function_response['Configuration']['FunctionArn']
         except botocore.exceptions.ClientError as e: # pragma: no cover
             print("Function does not exist, you should deploy first. Ex: zappa deploy {}. "
@@ -518,7 +519,7 @@ class ZappaCLI(object):
             return False
         else:
             tabular_print("Lambda Versions", len(lambda_versions))
-        function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+        function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name, Qualifier='HEAD')
         conf = function_response['Configuration']
         tabular_print("Lambda Name", self.lambda_name)
         tabular_print("Lambda ARN", conf['FunctionArn'])

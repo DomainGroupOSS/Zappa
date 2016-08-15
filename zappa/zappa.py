@@ -520,8 +520,9 @@ class Zappa(object):
             Publish=publish,
             VpcConfig=vpc_config
         )
-
-        return response['FunctionArn']
+        alias_response = self.lambda_client.create_alias(FunctionName=response['FunctionName'],
+                                                         FunctionVersion=response['Version'], Name='HEAD')
+        return alias_response['AliasArn']
 
     def update_lambda_function(self, bucket, s3_key, function_name, publish=True):
         """
@@ -537,8 +538,9 @@ class Zappa(object):
             S3Key=s3_key,
             Publish=publish
         )
-
-        return response['FunctionArn']
+        alias_response = self.lambda_client.update_alias(FunctionName=response['FunctionName'],
+                                                         FunctionVersion=response['Version'], Name='HEAD')
+        return alias_response['AliasArn']
 
     def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail', client_context=None, qualifier=None):
         """
@@ -970,15 +972,17 @@ class Zappa(object):
             Action='lambda:InvokeFunction',
             Principal=principal,
             SourceArn=source_arn,
+            Qualifier='HEAD'
         )
 
         if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
             print('Problem creating permission to invoke Lambda function')
-            return None # XXX: Raise?
+            raise RuntimeError('Failed to create permission for event invocation.')
 
         return permission_response
 
-    def schedule_events(self, lambda_arn, lambda_name, events, default=True):
+
+    def schedule_events(self, lambda_arn, lambda_name, events):
         """
         Given a Lambda ARN, name and a list of events, schedule this as CloudWatch Events.
 
@@ -1029,7 +1033,7 @@ class Zappa(object):
                     Rule=name,
                     Targets=[
                         {
-                            'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
+                            'Id': str(sum([ord(c) for c in name])),
                             'Arn': lambda_arn,
                         }
                     ]
@@ -1045,9 +1049,9 @@ class Zappa(object):
                 svc = ','.join(event['event_source']['events'])
                 service = svc.split(':')[0]
 
-                self.create_event_permission(   
-                                                lambda_name, 
-                                                service + '.amazonaws.com', 
+                self.create_event_permission(
+                                                lambda_name,
+                                                service + '.amazonaws.com',
                                                 event['event_source']['arn']
                                             )
 
